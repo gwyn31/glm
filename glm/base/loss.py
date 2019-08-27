@@ -4,7 +4,7 @@ Loss functions for linear models
 
 from abc import ABCMeta, abstractmethod
 
-from numpy import ndarray, zeros, log
+from numpy import ndarray, zeros, log, argwhere, sign, abs as np_abs, sum as np_sum
 from numpy.linalg import norm
 
 from glm.base.common import sigmoid_prob_predict
@@ -88,6 +88,37 @@ class MSE(LossFunction):
         m = x.shape[0]
         resid = pred.ravel() - y.ravel()
         loss_grad = (1 / m) * x.transpose().dot(resid.reshape((m, 1)))
+        return loss_grad + reg_grad
+
+
+class HuberLoss(LossFunction):
+
+    def __init__(self, eps=1.35, penalty=0.1):
+        self.eps = eps
+        self.penalty = penalty
+
+    def _get_indices(self, pred: ndarray, y: ndarray) -> (ndarray, ndarray, ndarray):
+        abs_resid = np_abs(pred.ravel() - y.ravel())
+        sq_idx = argwhere(abs_resid <= self.eps)
+        l_idx = argwhere(abs_resid > self.eps)
+        return abs_resid, sq_idx.ravel(), l_idx.ravel()
+
+    def get_loss(self, x: ndarray, y: ndarray, param: ndarray) -> float:
+        m = len(y)
+        pred = x.dot(param)
+        abs_resid, sq_idx, l_idx = self._get_indices(pred, y)
+        loss_val = 0.5 * np_sum(abs_resid[sq_idx] ** 2) + self.eps * np_sum((abs_resid[l_idx] - 0.5 * self.eps))
+        return loss_val / m
+
+    def get_grad(self, x: ndarray, y: ndarray, param: ndarray) -> ndarray:
+        m = len(y)
+        pred = x.dot(param)
+        y_col = y.reshape((m, 1))
+        resid = pred - y_col
+        reg_grad = _reg_grad(x, param, 2, self.penalty)
+        abs_resid, sq_idx, l_idx = self._get_indices(pred, y)
+        loss_grad = (1 / m) * ( x[sq_idx, :].transpose().dot(resid[sq_idx]) +
+                                self.eps * x[l_idx, :].transpose().dot(sign(resid[l_idx])) )
         return loss_grad + reg_grad
 
 

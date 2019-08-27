@@ -14,7 +14,7 @@ if __name__ == '__main__':
     print(clf.coef_)
     print(roc_auc_score(y, clf.predict_proba(x)[:, -1]))
 
-    clf = MyLog(alpha=0.1, reg_norm=2, solver="sgd", lr=0.003, batch_size=10, max_iters=20000, tol=1e-1)
+    clf = MyLog(alpha=0.1, reg_norm=2, solver="sgd", lr=0.1, batch_size=10, max_iters=15000, tol=1e-2)
     clf.train(x, y)
     print(clf.get_params())
     print(roc_auc_score(y, clf.predict_prob(x)[:, -1]))

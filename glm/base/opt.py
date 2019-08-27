@@ -36,7 +36,7 @@ class IterativeOptimizer(metaclass=ABCMeta):
 class SGD(IterativeOptimizer):
 
     """
-    Mini-batch gradient descent algorithm.
+    A basic Mini-batch gradient descent algorithm.
     In practice sometimes also referring to `stochastic gradient descent`.
     """
 
@@ -100,7 +100,14 @@ class SGD(IterativeOptimizer):
 
 class CoordinateDescent(IterativeOptimizer):
 
+    """
+    A basic Coordinate Descent algorithm.
+    """
+
     def __init__(self, max_iters=10000): pass
 
     def check_configs(self): pass
+
+    def optimize(self, loss_obj: LossFunction, x: ndarray, y: ndarray, init_param: ndarray) -> (ndarray, ndarray):
+        pass
 
