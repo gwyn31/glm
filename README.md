@@ -4,6 +4,7 @@ This project is only for learning
 
 ## Implemented Models
 - Ridge Regression
+- Huber Regression
 - Logistic Regression
 
 ## Implemented Optimizers
