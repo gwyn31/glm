@@ -4,7 +4,16 @@ Linear classifiers
 
 from numpy import ndarray, hstack, argmax
 
-from glm.base import LogLoss, BaseLM, SGD, add_bias, sigmoid_prob_predict, genr_init_params
+from glm.base import LogLoss, BaseLM, SGD, CoordinateDescent, add_bias, sigmoid_prob_predict, genr_init_params
+
+
+class _CDLogistic(CoordinateDescent):
+
+    def genr_vars_seq(self, x: ndarray, y: ndarray, params: ndarray, loss_obj=None):
+        pass
+
+    def get_single_var_solution(self, j: int, x: ndarray, y: ndarray, params: ndarray):
+        pass
 
 
 class LogisticRegression(BaseLM):
@@ -13,14 +22,15 @@ class LogisticRegression(BaseLM):
     Logistic regression model for binary classification
     """
 
-    def __init__(self, alpha=0.1, reg_norm=2, solver="sgd", **solver_cfg):
+    def __init__(self, alpha=0.1, reg_norm=2, lr=0.01, batch_size=32, max_iters=1000, tol=1e-3):
         self.alpha = alpha
         self.reg_norm = reg_norm
-        if solver == "sgd":
-            self.solver = SGD(**solver_cfg)
+        if reg_norm == 2:
+            self.solver = SGD(lr=lr, batch_size=batch_size, max_iters=max_iters, tol=tol)
         else:
-            raise ValueError("`solver` only supports `sgd` or `cd`")
+            self.solver = _CDLogistic(tol=tol, max_iters=max_iters)
         self.__params = None
+        self.__loss_history = []
 
     def _check_hyperparameters(self):
         try:
@@ -37,11 +47,8 @@ class LogisticRegression(BaseLM):
         logloss = LogLoss(reg_norm=self.reg_norm, penalty=self.alpha)
         params, loss_history = self.solver.optimize(logloss, x_bias, y, init_params)
         self.__params = params
-        self.loss_history = loss_history
+        self.__loss_history = loss_history
         return self
-
-    def get_params(self) -> ndarray:
-        return self.__params
 
     def predict(self, x: ndarray) -> ndarray:
         prob = self.predict_prob(x)
@@ -52,4 +59,15 @@ class LogisticRegression(BaseLM):
         pos_pred = sigmoid_prob_predict(x_bias, self.__params)
         neg_pred = 1 - pos_pred
         return hstack((neg_pred, pos_pred))
+
+    def get_params(self) -> ndarray:
+        return self.__params
+
+    @property
+    def n_iters(self):
+        return self.solver.n_iters
+
+    @property
+    def loss_history(self):
+        return self.__loss_history
 
